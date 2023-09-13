@@ -1,0 +1,123 @@
+pipeline {
+    agent any 
+    
+    tools{
+        jdk 'jdk11'
+        maven 'maven3'
+    }
+    
+   
+    
+    stages{
+        
+        stage("Git Checkout"){
+            steps{
+                git branch: 'master', changelog: false, poll: false, url: 'https://github.com/Pripan317/vulnado.git'
+            }
+        }
+        
+        stage("Compile"){
+            steps{
+                sh "mvn clean compile"
+            }
+        }
+        
+         stage("Test Cases"){
+            steps{
+                sh "mvn test"
+            }
+        }
+        
+        stage('OWASP Dependency-Check Vulnerabilities') {
+            steps {
+                dependencyCheck additionalArguments: ''' 
+                -o './'
+                -s './'
+                -f 'ALL' 
+                --prettyPrint''', odcInstallation: 'DP-Check'
+                dependencyCheckPublisher pattern: 'dependency-check-report.xml'
+            }
+        }
+        
+         stage("Build"){
+            steps{
+                sh " mvn clean install"
+            }
+        }
+        
+        
+        
+         stage('snyk2') {
+            steps{
+           snykSecurity failOnIssues: false,snykInstallation: 'snyk', snykTokenId: 'snyk-token'
+
+            }
+        
+        
+        }
+        
+       
+       
+          stage("Docker Build"){
+            steps{
+                script{
+                  withDockerRegistry(credentialsId: 'docker-creds', toolName: 'docker')  {
+                        
+                         sh "docker build -t post ."
+                        //  sh "docker-compose up"
+                        
+                        // sh "docker tag pri  pripan317/app:latest "
+                        // sh "docker push pripan317/app:latest "
+                    }
+                    
+                   
+                }
+            }
+        }
+        
+          stage("Docker-compose Build"){
+            steps{
+                script{
+                  withDockerRegistry(credentialsId: 'docker-creds', toolName: 'docker')  {
+                        
+                        //  sh "docker build -t postgress ."
+                         sh "docker-compose build"
+                        
+                        // sh "docker tag pri  pripan317/app:latest "
+                        // sh "docker push pripan317/app:latest "
+                    }
+                    
+                   
+                }
+            }
+        }
+        
+        stage("Docker push images"){
+            steps{
+                script{
+                  withDockerRegistry(credentialsId: 'docker-creds', toolName: 'docker')  {
+                        
+                        sh "docker tag capstone2_vulnado  pripan317/vulnado:latest"
+                         sh "docker push pripan317/vulnado:latest"
+                         
+                          sh "docker tag capstone2_client  pripan317/client:latest"
+                         sh "docker push pripan317/client:latest"
+                         
+                          sh "docker tag capstone2_internal_site  pripan317/internalsite:latest"
+                         sh "docker push pripan317/internalsite:latest"
+                        
+                         sh "docker tag postgres  pripan317/postgress:latest"
+                         sh "docker push pripan317/postgress:latest"
+                    }
+                    
+                   
+                }
+            }
+        }
+        
+        
+        
+       
+          
+    }
+}
