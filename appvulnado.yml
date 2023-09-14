@@ -1,0 +1,147 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: java-app
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: java-app-vs
+spec:
+  hosts:
+    - "*" # This will match any host
+  gateways:
+    - java-app  # Reference to the Gateway created above
+  http:
+    - route:
+        - destination:
+            host: client-service # The name of your service in Kubernetes
+            port:
+              number: 8080 # The port your service is listening on
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: client-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: client
+  template:
+    metadata:
+      labels:
+        app: client
+    spec:
+      containers:
+        - name: client
+          image: pripan317/client:latest
+          ports:
+            - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: client-service
+spec:
+  selector:
+    app: client
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: LoadBalancer
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: db-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: db
+  template:
+    metadata:
+      labels:
+        app: db
+    spec:
+      containers:
+        - name: db
+          image: pripan317/postgress:latest
+          env:
+            - name: POSTGRES_PASSWORD
+              value: vulnado
+            - name: POSTGRES_DB
+              value: vulnado
+
+---              
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: internal-site-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: internal-site
+  template:
+    metadata:
+      labels:
+        app: internal-site
+    spec:
+      containers:
+        - name: internal-site
+          image: pripan317/internalsite:latest
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vulnado-deployment
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vulnado
+  template:
+    metadata:
+      labels:
+        app: vulnado
+    spec:
+      containers:
+        - name: vulnado
+          image: pripan317/vulnado:latest
+          ports:
+            - containerPort: 8081
+          env:
+            - name: PGPASSWORD
+              value: vulnado
+            - name: PGDATABASE
+              value: vulnado
+            - name: PGHOST
+              value: db:5432
+            - name: PGUSER
+              value: postgres
+          
+
+              
+
+  
+
+
+              
+    
