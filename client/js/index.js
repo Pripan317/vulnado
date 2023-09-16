@@ -51,17 +51,17 @@ $(document).ready(function(){
     });
   });
 
-//   $('#signout').click(function(){
-//     alert("Goodbye!");
-//     localStorage.jwt = '';
-//     localStorage.username = '';
-//     window.location.replace("login.html")
-//   });
+  $('#signout').click(function(){
+    alert("Goodbye!");
+    localStorage.jwt = '';
+    localStorage.username = '';
+    window.location.replace("login.html")
+  });
 
-//   // Initialize
-//   if (localStorage.getItem("jwt")){
-//     fetchComments();
-//   } else{
-//     window.location.replace("login.html");
-//   }
-// });
+  // Initialize
+  if (localStorage.getItem("jwt")){
+    fetchComments();
+  } else{
+    window.location.replace("login.html");
+  }
+});
